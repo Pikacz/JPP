@@ -36,7 +36,7 @@ exprToType (Abs.ExprDL var) vt te = checkInc var vt te
 -- call
 exprToType (Abs.ExprCall var exprs) vt te = case varToType var vt te of
                     Left e -> Left e
-                    Right (Env.TFunc params rt) -> case checkParams exprs params vt te of
+                    Right (Env.TFunc params rt _) -> case checkParams exprs params vt te of
                         Nothing -> Right rt
                         Just e -> Left e
 
@@ -198,10 +198,10 @@ parseDec (Abs.DFunc t nm params stm) vt te = case parseParams params vt te [] of
         Left er -> Left er
         Right (vt', fpr) -> case Env.getTypeAbs t te of
             Left e -> Left $ EnvError e
-            Right t' -> let vt''' = insertVariable nm (Env.TFunc fpr t') vt' in case parseStm stm vt''' te t' of
+            Right t' -> let vt''' = insertVariable nm (Env.TFunc fpr t' []) vt' in case parseStm stm vt''' te t' of
                 Left e -> Left e
                 Right (vt'', te'', t'') -> if t' /= t'' then Left ( FunctionWrongRet nm t' t'' ) else
-                        Right $ Left $ (nm, (Env.TFunc fpr t'))
+                        Right $ Left $ (nm, (Env.TFunc fpr t' []))
                     
 
 

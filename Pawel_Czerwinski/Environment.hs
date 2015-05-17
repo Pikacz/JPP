@@ -12,7 +12,7 @@ data Type =
     | TVoid
     | TArray Type Int
     | TStruct TypeEnv
-    | TFunc [(ParamName, ParamType)] ReturnType 
+    | TFunc [(ParamName, ParamType)] ReturnType [Abs.Stm] 
         deriving (Show, Eq)
 
 structFromList:: [ (TypeName, Type) ] -> Type
@@ -86,38 +86,57 @@ data Value =
     | VBool Bool
     | VChar Char
     | VString String
-    | VArray [Value]
+    | VArray [Loc]
     | VStruct Environment
-    | VFunc -- ??
+    | VFunc [Param] [Abs.Stm] Environment
     | VVoid
 
 
-defValue :: Type -> State -> (Value, State)
-defValue TInt st = (VInt 0, st)
-defValue TChar st = (VChar 'c', st)
-defValue TStr st = (VString "", st)
-defValue TBool st = (VBool False, st)
-defValue (TArray t i) st = arrDef t st i []
-defValue (TStruct te) st = let ev = env te in
+data Param = Ref Abs.Ident | Val Abs.Ident
+
+defValue :: Type -> State -> Environment -> (Value, State)
+defValue TInt st _ = (VInt 0, st)
+defValue TChar st _ = (VChar 'c', st)
+defValue TStr st _ = (VString "", st)
+defValue TBool st _ = (VBool False, st)
+defValue (TArray t i) st ev = arrDef t st ev i []
+defValue (TStruct te) st e = let ev = env te in
          let atrs = Map.toList ev in
-            structDef atrs st emptyEnvironment
+            structDef atrs st e emptyEnvironment
+defValue (TFunc params _ stms) st ev = let ps = tParamsToVParams params [] in
+        (VFunc ps stms ev, st)
 
 
-structDef :: [(TypeName, Type)] -> State -> Environment -> (Value, State)
-structDef [] st acc = (VStruct acc, st)
-structDef ((nm, t) : atrs) st acc = let (v, st') = defValue t st in
+structDef :: [(TypeName, Type)] -> State -> Environment -> Environment-> (Value, State)
+structDef [] st ev acc = (VStruct acc, st)
+structDef ((nm, t) : atrs) st ev acc = let (v, st') = defValue t st ev in
         let l = next st' in
             let st'' = addValue l v st' in
-                let acc' = addVariable (Abs.Ident nm) l acc in
-                    structDef atrs st'' acc'
+                let acc' = addVariable (Abs.Ident nm) l acc 
+                    ev' = addVariable (Abs.Ident nm) l ev in
+                    structDef atrs st'' ev' acc'
 
-arrDef :: Type -> State -> Int -> [Value] -> (Value, State)
-arrDef _ st 0 acc = (VArray acc, st)
-arrDef t st i acc = let (v, st') = defValue t st in
-        arrDef t st' (i - 1) (v : acc)
+arrDef :: Type -> State -> Environment -> Int -> [Loc] -> (Value, State)
+arrDef _ st ev 0 acc = (VArray acc, st)
+arrDef t st ev i acc = let (v, st') = defValue t st ev in
+        let l = next st' in
+            let st'' = addValue l v st' in
+                arrDef t st'' ev (i - 1) (l : acc)
 
-getValFromArray:: Value -> Value -> Value
-getValFromArray (VInt i) (VArray l) = l !! i 
+
+tParamsToVParams :: [(ParamName, ParamType)] -> [Param] -> [Param]
+tParamsToVParams [] acc = reverse acc
+tParamsToVParams ((nm, t) : rest) acc = case t of
+        PVal t' -> let acc' = (Val (Abs.Ident nm)) : acc in
+            tParamsToVParams rest acc'
+        PRef t' -> let acc' = (Ref (Abs.Ident nm)) : acc in
+            tParamsToVParams rest acc'
+                
+
+getValFromArray:: Value -> Value -> Either EnvError Loc
+getValFromArray (VInt i) (VArray ls) = if i >= length ls then Left ArrayOutOfBound 
+        else let l = ls !! i in
+            Right $ l
 
 
 type Loc = Int
@@ -156,6 +175,7 @@ emptyState = State (Map.empty) 1
 -- Errors
 data EnvError = 
       TypeDoNotExist TypeName TypeEnv
+    | ArrayOutOfBound
 
 
 instance Show EnvError where
