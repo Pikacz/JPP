@@ -1,0 +1,107 @@
+Prog.    Program ::= [Stm] ;
+
+
+comment "//" ;
+
+terminator Stm ";" ;
+
+StmExpr.    Stm ::= Expr ;
+StmDec.     Stm ::= Dec ;
+StmWhile.   Stm ::= "while" "(" Expr ")" Stm ;
+StmIf.      Stm ::= "if" "(" Expr ")" Stm "fi" ;
+StmIfE.     Stm ::= "if" "(" Expr ")" Stm "else" Stm ;
+StmBloc.    Stm ::= "{" [Stm] "}" ;
+StmFor.     Stm ::= "for" "(" Dec ";" Expr ";" Stm ")" Stm ;
+StmRet.     Stm ::= "return" ;
+StmRetV.    Stm ::= "return" Expr ;
+StmPrint.   Stm ::= "print" Expr ;
+StmRead.    Stm ::= "read" Var ;
+
+
+-- Declarations
+terminator Dec ";" ;
+
+DVar.   Dec ::= Type Ident ;
+DInit.  Dec ::= Type Ident "=" Expr ;
+DArr.   Dec ::= Type Ident "[" Expr "]" ;
+DRec.   Dec ::= "struct" Ident "{" [Dec] "}" ; 
+DFunc.  Dec ::= Type Ident "(" [Param] ")" Stm ;
+
+separator Param "," ;
+
+PVal.  Param ::= Type Ident ;
+PVar.  Param ::= Type "&" Ident ; 
+
+-- Types
+
+TCust.  Type  ::= Ident ;
+TInt.   Type  ::= "int" ;
+TBool.  Type  ::= "bool" ;
+TChar.  Type  ::= "char" ;
+TStr.   Type  ::= "string" ;
+TVoid.  Type  ::= "void" ;
+_.      Type  ::= Type1 ;
+TArr.   Type1 ::= Type "[]" ;
+
+-- Expressions
+
+separator Expr "," ;
+
+ExprAss.       Expr ::= Var "=" Expr ;
+ExprAssO.      Expr ::= Var AssOpr Expr ;
+ExprIR.        Expr ::= Var "++" ;
+ExprIL.        Expr ::= "++" Var ;
+ExprDR.        Expr ::= Var "--" ;
+ExprDL.        Expr ::= "--" Var ;
+
+ExprAnd.       Expr1 ::= Expr2 "&&" Expr2 ;
+ExprOr.        Expr1 ::= Expr2 "||" Expr2 ;
+ExprNot.       Expr1 ::= "~" Expr2 ;
+
+ExprLt.        Expr2 ::= Expr3 "<" Expr3 ;
+ExprLte.       Expr2 ::= Expr3 "<=" Expr3 ;
+ExprEq.        Expr2 ::= Expr3 "==" Expr3 ;
+ExprNEq.       Expr2 ::= Expr3 "!=" Expr3 ;
+ExprGte.       Expr2 ::= Expr3 ">=" Expr3 ;
+ExprGt.        Expr2 ::= Expr3 ">" Expr3 ;
+
+ExprAdd.       Expr3 ::= Expr3 "+" Expr4 ;
+ExprSub.       Expr3 ::= Expr3 "-" Expr4 ;
+ExprMod.       Expr3 ::= Expr3 "%" Expr4 ;
+
+ExprMul.       Expr4 ::= Expr4 "*" Expr5 ;
+ExprDiv.       Expr4 ::= Expr4 "/" Expr5 ;
+
+ExprVal.       Expr5 ::= Val ;
+ExprVar.       Expr5 ::= Var ;
+ExprCall.      Expr5 ::= Var "(" [Expr] ")" ;
+
+coercions Expr 5 ;
+
+
+AssAdd.    AssOpr ::= "+=" ;
+AssSub.    AssOpr ::= "-=" ;
+AssMul.    AssOpr ::= "*=" ;
+AssDiv.    AssOpr ::= "/=" ;
+AssMod.    AssOpr ::= "%=" ;
+
+-- Values
+
+ValInt.   Val ::= Integer ;
+ValChar.  Val ::= Char ;
+ValStr.   Val ::= String ;
+ValTrue.  Val ::= "true" ;
+ValFalse. Val ::= "false" ;
+
+
+
+-- Variables
+
+VarArr.     Var  ::= Var "[" Expr "]" ;
+_.          Var  ::= Var1 ;
+VarRec.     Var1 ::= Var "." Ident ;
+_.          Var1 ::= Var2 ;
+VarVar.     Var2 ::= Ident ;
+
+
+

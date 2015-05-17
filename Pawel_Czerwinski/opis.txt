@@ -1,0 +1,10 @@
+struct {
+    dowolna deklaracja
+    widac zniemme zadeklarowane w strukcie
+    int a = 11;
+    int b = a; // b = 11
+    int c;
+    int d = c; // runtime error - uzycie niezainicjalizowanej zmiennej
+    int e = f; // blad typu - f nie istnieje
+    int f = 12;
+};
