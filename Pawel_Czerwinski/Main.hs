@@ -52,12 +52,15 @@ showTree v tree
 
 
 main = do
-      interact abc
-      putStrLn ""
+    s <- getContents 
+    let Ok e = pProgram (myLexer s)
+    interpret e
+    putStrLn ""
   
+{-
 abc s = 
       let Ok e = pProgram (myLexer s) 
-      in  (interpret e)
+      in  (interpret e) -}
 
 --main :: IO ()
 --main = do args <- getArgs

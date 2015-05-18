@@ -36,7 +36,7 @@ exprToType (Abs.ExprDL var) vt te = checkInc var vt te
 -- call
 exprToType (Abs.ExprCall var exprs) vt te = case varToType var vt te of
                     Left e -> Left e
-                    Right (Env.TFunc params rt _) -> case checkParams exprs params vt te of
+                    Right (Env.TFunc params rt ) -> case checkParams exprs params vt te of
                         Nothing -> Right rt
                         Just e -> Left e
 
@@ -118,7 +118,7 @@ isVariable exp _ _ = Left $ ExceptedVariable exp
 varToType :: Abs.Var -> VariableType -> Env.TypeEnv -> Either TypeError Env.Type
 varToType (Abs.VarVar  nm) vt te = getVariable nm vt
 varToType (Abs.VarRec var (Abs.Ident nm)) vt te = case getVariable (Abs.Ident nm) vt of
-                    Right (Env.TStruct structVT) -> varToType var structVT te
+                    Right (Env.TStruct structVT _) -> varToType var structVT te
                     Right t -> Left $ ExceptedStruct t nm
                     Left e -> Left e
 varToType (Abs.VarArr var expr) vt te = case exprToType expr vt te of
@@ -192,16 +192,16 @@ parseDec (Abs.DArr t nm expr) vt te = case Env.getTypeAbs t te of
             Right t -> Left $ WrongType { expected = Env.TInt, actual = t }
 parseDec (Abs.DRec (Abs.Ident nm) decs) vt te = case parseDecs decs vt te Env.emptyTypeEnv of
         Left er -> Left er
-        Right te -> let t = Env.TStruct te
+        Right te -> let t = Env.TStruct te Env.emptySE
                     in Right $ Right (nm, t)
 parseDec (Abs.DFunc t nm params stm) vt te = case parseParams params vt te [] of
         Left er -> Left er
         Right (vt', fpr) -> case Env.getTypeAbs t te of
             Left e -> Left $ EnvError e
-            Right t' -> let vt''' = insertVariable nm (Env.TFunc fpr t' []) vt' in case parseStm stm vt''' te t' of
+            Right t' -> let vt''' = insertVariable nm (Env.TFunc fpr t' ) vt' in case parseStm stm vt''' te t' of
                 Left e -> Left e
                 Right (vt'', te'', t'') -> if t' /= t'' then Left ( FunctionWrongRet nm t' t'' ) else
-                        Right $ Left $ (nm, (Env.TFunc fpr t' []))
+                        Right $ Left $ (nm, (Env.TFunc fpr t' ))
                     
 
 

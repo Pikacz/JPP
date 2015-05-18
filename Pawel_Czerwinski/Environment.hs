@@ -11,12 +11,12 @@ data Type =
     | TStr
     | TVoid
     | TArray Type Int
-    | TStruct TypeEnv
-    | TFunc [(ParamName, ParamType)] ReturnType [Abs.Stm] 
+    | TStruct TypeEnv StructEnv
+    | TFunc [(ParamName, ParamType)] ReturnType
         deriving (Show, Eq)
 
 structFromList:: [ (TypeName, Type) ] -> Type
-structFromList l = TStruct $ typeEnvFromList l
+structFromList l = TStruct (typeEnvFromList l) emptySE
 
 
 type TypeName = String
@@ -26,6 +26,15 @@ data TypeEnv =
     TypeEnv { env :: Map.Map TypeName Type }
         deriving (Show, Eq)
 
+
+data StructEnv = StructEnv (Map.Map VariableName Value)
+        deriving (Show, Eq)
+
+emptySE :: StructEnv
+emptySE = StructEnv $ Map.empty
+
+addToSE :: Abs.Ident -> Value -> StructEnv -> StructEnv
+addToSE (Abs.Ident nm) val (StructEnv se) = StructEnv $ Map.insert nm val se 
 
 basicTypes :: [ (TypeName, Type) ]
 basicTypes = [ ("int", TInt)
@@ -88,11 +97,21 @@ data Value =
     | VString String
     | VArray [Loc]
     | VStruct Environment
-    | VFunc [Param] [Abs.Stm] Environment
+    | VFunc [Param] Abs.Stm Environment
     | VVoid
+    | VNothing
+    deriving (Eq)
 
+instance Show Value where
+    show (VInt i) = show i
+    show (VBool b) = show b
+    show (VChar c) = show c
+    show (VString s) = s
+    show (VArray locs) = "Array"
+    show (VStruct _) = "Struct"
+    show (VFunc _ _ _) = "Function"
 
-data Param = Ref Abs.Ident | Val Abs.Ident
+data Param = Ref Abs.Ident | Val Abs.Ident deriving (Show, Eq)
 
 defValue :: Type -> State -> Environment -> (Value, State)
 defValue TInt st _ = (VInt 0, st)
@@ -100,21 +119,19 @@ defValue TChar st _ = (VChar 'c', st)
 defValue TStr st _ = (VString "", st)
 defValue TBool st _ = (VBool False, st)
 defValue (TArray t i) st ev = arrDef t st ev i []
-defValue (TStruct te) st e = let ev = env te in
-         let atrs = Map.toList ev in
+defValue (TStruct _ (StructEnv ev)) st e = let atrs = Map.toList ev in
             structDef atrs st e emptyEnvironment
-defValue (TFunc params _ stms) st ev = let ps = tParamsToVParams params [] in
-        (VFunc ps stms ev, st)
 
 
-structDef :: [(TypeName, Type)] -> State -> Environment -> Environment-> (Value, State)
+
+structDef :: [(VariableName, Value)] -> State -> Environment -> Environment-> (Value, State)
 structDef [] st ev acc = (VStruct acc, st)
-structDef ((nm, t) : atrs) st ev acc = let (v, st') = defValue t st ev in
-        let l = next st' in
-            let st'' = addValue l v st' in
+structDef ((nm, v) : atrs) st ev acc = 
+        let l = next st in
+            let st' = addValue l v st in
                 let acc' = addVariable (Abs.Ident nm) l acc 
                     ev' = addVariable (Abs.Ident nm) l ev in
-                    structDef atrs st'' ev' acc'
+                    structDef atrs st' ev' acc'
 
 arrDef :: Type -> State -> Environment -> Int -> [Loc] -> (Value, State)
 arrDef _ st ev 0 acc = (VArray acc, st)
@@ -124,12 +141,12 @@ arrDef t st ev i acc = let (v, st') = defValue t st ev in
                 arrDef t st'' ev (i - 1) (l : acc)
 
 
-tParamsToVParams :: [(ParamName, ParamType)] -> [Param] -> [Param]
+tParamsToVParams :: [Abs.Param] -> [Param] -> [Param]
 tParamsToVParams [] acc = reverse acc
-tParamsToVParams ((nm, t) : rest) acc = case t of
-        PVal t' -> let acc' = (Val (Abs.Ident nm)) : acc in
+tParamsToVParams (p : rest) acc = case p of
+        Abs.PVal t nm -> let acc' = (Val nm) : acc in
             tParamsToVParams rest acc'
-        PRef t' -> let acc' = (Ref (Abs.Ident nm)) : acc in
+        Abs.PVar t nm -> let acc' = (Ref nm) : acc in
             tParamsToVParams rest acc'
                 
 
@@ -142,7 +159,7 @@ getValFromArray (VInt i) (VArray ls) = if i >= length ls then Left ArrayOutOfBou
 type Loc = Int
 type VariableName = TypeName
 
-data Environment = Environment (Map.Map TypeName Loc) 
+data Environment = Environment (Map.Map TypeName Loc) deriving (Show, Eq) 
 
 addVariable :: Abs.Ident -> Loc -> Environment -> Environment
 addVariable (Abs.Ident nm) l (Environment env) = Environment $ Map.insert nm l env
@@ -180,4 +197,4 @@ data EnvError =
 
 instance Show EnvError where
     show (TypeDoNotExist nm tenv) = "Type " ++ (show nm) ++ " do not exist!\n" ++ (show tenv)
-
+    show (ArrayOutOfBound) = "index out of array bounds"
