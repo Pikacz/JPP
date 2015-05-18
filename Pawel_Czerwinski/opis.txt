@@ -1,10 +1,19 @@
-struct {
-    dowolna deklaracja
-    widac zniemme zadeklarowane w strukcie
-    int a = 11;
-    int b = a; // b = 11
-    int c;
-    int d = c; // runtime error - uzycie niezainicjalizowanej zmiennej
-    int e = f; // blad typu - f nie istnieje
-    int f = 12;
-};
+kompilacja make
+uruchomienie ./interpreter < program.abc
+
+w założeniach miał być to język podobny do c
+
+w stosunku do projektu została zmieniona składnia ifa na
+if (wyrazenie True / False) STM fi
+została dodana instrukcja print wartość
+przy czym nie wspiera wypisywania structa lub tablicy (wypisze "Struct" / "Array")
+
+
+przed uruchomieniem programu następuje sprwdzenie typów
+
+możliwe jest przesłanianie zmiennych nowymi zmiennymi tego samego typu
+
+funkcje widzą środowisko sprzed ich deklaracji
+
+możliwe są wywołania rekurencyjne niestety przekazywanie parametrów rekurencyjnie jest zabugowane (poprawie w ciągu doby)
+funkcje wewnątrz structa również :<

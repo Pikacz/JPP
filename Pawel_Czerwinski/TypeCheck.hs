@@ -117,8 +117,8 @@ isVariable exp _ _ = Left $ ExceptedVariable exp
 -- Variablse
 varToType :: Abs.Var -> VariableType -> Env.TypeEnv -> Either TypeError Env.Type
 varToType (Abs.VarVar  nm) vt te = getVariable nm vt
-varToType (Abs.VarRec var (Abs.Ident nm)) vt te = case getVariable (Abs.Ident nm) vt of
-                    Right (Env.TStruct structVT _) -> varToType var structVT te
+varToType (Abs.VarRec var (Abs.Ident nm)) vt te = case varToType var vt te of
+                    Right (Env.TStruct structVT _) -> getVariable (Abs.Ident nm) vt
                     Right t -> Left $ ExceptedStruct t nm
                     Left e -> Left e
 varToType (Abs.VarArr var expr) vt te = case exprToType expr vt te of

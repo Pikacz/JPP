@@ -57,15 +57,8 @@ runStm (Abs.StmIfE ex st1 st2) ev st te =
         Left e -> return $ Left e
         Right (v, st') -> if v == (Env.VBool True) then runStm st1 ev st' te
             else runStm st2 ev st' te
-runStm (Abs.StmBloc []) ev st te = return $ Right (ev, st, te, Env.VNothing)
-runStm (Abs.StmBloc (stm : ss)) ev st te =
-    do x <- runStm stm ev st te
-       case x of
-        Left e -> return $ Left e
-        Right (ev', st', te', val) -> case val of
-            Env.VNothing -> runStm (Abs.StmBloc ss) ev' st' te'
-            v -> return $ Right (ev, st', te, val)
-runStm (Abs.StmFor dec exp stm1 stm2) ev st te =
+runStm (Abs.StmBloc ss) ev st te = runBloc ss ev st te ev te
+runStm (Abs.StmFor dec exp stm2 stm1) ev st te =
     let sdec = Abs.StmDec dec
         stm = Abs.StmBloc [stm1, stm2] in
         let wh = Abs.StmWhile exp stm in
@@ -85,7 +78,17 @@ runStm (Abs.StmPrint expr) ev st te =
             do print v
                return $ Right (ev, st', te, Env.VNothing)
 
+runBloc :: [Abs.Stm] -> Env.Environment -> Env.State -> Env.TypeEnv -> Env.Environment -> Env.TypeEnv ->
+     IO (Either RuntimeError (Env.Environment, Env.State, Env.TypeEnv, Env.Value))
+runBloc [] ev st te accev accte = return $ Right (accev, st, accte, Env.VNothing)
+runBloc (s:ss) ev st te accev accte =
+    do x <- runStm s ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (ev', st', te', v) -> if v /= Env.VNothing then return $ Right (accev, st', accte, v) else
+            runBloc ss ev' st' te' accev accte
 
+ 
 -- Right Left variable, Right Right type
 runDec :: Abs.Dec -> Env.Environment -> Env.State -> Env.TypeEnv -> IO (Either RuntimeError 
          (Either (Abs.Ident, Env.Value, Env.State) 
@@ -135,6 +138,155 @@ runDecs (dec : ds) ev st te acc =
 
 
 exprToVal :: Abs.Expr -> Env.Environment -> Env.State -> Env.TypeEnv -> IO (Either RuntimeError (Env.Value, Env.State))
+exprToVal (Abs.ExprAss var ex) ev st te = 
+    do x <- varToLoc var ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (l, st') -> 
+            do xx <- exprToVal ex ev st te
+               case xx of
+                Left e -> return $ Left e
+                Right (v, st'') -> let st''' = Env.addValue l v st'' in
+                    return $ Right (v, st''')
+exprToVal (ExprAssO var ao ex) ev st te = case ao of
+    Abs.AssAdd -> association var ex ev st te (+)
+    Abs.AssSub -> association var ex ev st te (-)
+    Abs.AssMul -> association var ex ev st te (*)
+    Abs.AssDiv -> 
+        do x <- exprToVal ex ev st te
+           case x of
+            Left e -> return $ Left e
+            Right (Env.VInt i, _) -> if i == 0 then return $ Left ZeroDiv
+                else association var ex ev st te (div)
+    Abs.AssMod -> 
+        do x <- exprToVal ex ev st te
+           case x of
+            Left e -> return $ Left e
+            Right (Env.VInt i, _) -> if i == 0 then return $ Left ZeroDiv
+                else association var ex ev st te (mod)
+
+
+exprToVal (Abs.ExprIR var) ev st te =
+    do x <- varToLoc var ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (l, st') -> let Env.VInt v = Env.getValue l st' in
+            let st'' = Env.addValue l (Env.VInt (v+1)) st' in
+                return $ Right (Env.VInt v, st'')
+exprToVal (Abs.ExprIL var) ev st te =
+    do x <- varToLoc var ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (l, st') -> let Env.VInt v = Env.getValue l st' in
+            let st'' = Env.addValue l (Env.VInt (v+1)) st' in
+                return $ Right (Env.VInt (v+1), st'')
+exprToVal (Abs.ExprDR var) ev st te =
+    do x <- varToLoc var ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (l, st') -> let Env.VInt v = Env.getValue l st' in
+            let st'' = Env.addValue l (Env.VInt (v-1)) st' in
+                return $ Right (Env.VInt v, st'')
+exprToVal (Abs.ExprDL var) ev st te =
+    do x <- varToLoc var ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (l, st') -> let Env.VInt v = Env.getValue l st' in
+            let st'' = Env.addValue l (Env.VInt (v-1)) st' in
+                return $ Right (Env.VInt (v-1), st'')
+
+exprToVal (Abs.ExprAnd e1 e2) ev st te = 
+    do x <- exprToVal e1 ev st te 
+       case x of
+        Left e -> return $ Left e
+        Right (Env.VBool b1, st') ->
+            do xx <- exprToVal e2 ev st' te
+               case xx of
+                Left e -> return $ Left e
+                Right (Env.VBool b2, st'') -> return $ Right (Env.VBool (b1 && b2), st'')
+
+exprToVal (Abs.ExprOr e1 e2) ev st te = 
+    do x <- exprToVal e1 ev st te 
+       case x of
+        Left e -> return $ Left e
+        Right (Env.VBool b1, st') ->
+            do xx <- exprToVal e2 ev st' te
+               case xx of
+                Left e -> return $ Left e
+                Right (Env.VBool b2, st'') -> return $ Right (Env.VBool (b1 || b2), st'')
+
+exprToVal (Abs.ExprNot e) ev st te = 
+    do x <- exprToVal e ev st te 
+       case x of
+        Left e -> return $ Left e
+        Right (Env.VBool b, st') -> return $ Right (Env.VBool (not b), st')
+ 
+exprToVal (Abs.ExprLt e1 e2) ev st te =
+    do x <- arithmeticExpr e1 e2 ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (i1, i2, st') -> return $ Right (Env.VBool (i1 < i2), st')
+
+exprToVal (Abs.ExprLte e1 e2) ev st te =
+    do x <- arithmeticExpr e1 e2 ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (i1, i2, st') -> return $ Right (Env.VBool (i1 <= i2), st')
+
+exprToVal (Abs.ExprEq e1 e2) ev st te =
+    do x <- arithmeticExpr e1 e2 ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (i1, i2, st') -> return $ Right (Env.VBool (i1 == i2), st')
+
+exprToVal (Abs.ExprNEq e1 e2) ev st te =
+    do x <- arithmeticExpr e1 e2 ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (i1, i2, st') -> return $ Right (Env.VBool (i1 /= i2), st')
+
+exprToVal (Abs.ExprGte e1 e2) ev st te =
+    do x <- arithmeticExpr e1 e2 ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (i1, i2, st') -> return $ Right (Env.VBool (i1 >= i2), st')
+
+exprToVal (Abs.ExprGt e1 e2) ev st te =
+    do x <- arithmeticExpr e1 e2 ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (i1, i2, st') -> return $ Right (Env.VBool (i1 > i2), st')
+
+exprToVal (Abs.ExprAdd e1 e2) ev st te =
+    do x <- arithmeticExpr e1 e2 ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (i1, i2, st') -> return $ Right (Env.VInt (i1 + i2), st')
+
+exprToVal (Abs.ExprSub e1 e2) ev st te =
+    do x <- arithmeticExpr e1 e2 ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (i1, i2, st') -> return $ Right (Env.VInt (i1 - i2), st')
+
+exprToVal (Abs.ExprMod e1 e2) ev st te =
+    do x <- arithmeticExpr e1 e2 ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (i1, i2, st') -> if i2 == 0 then return $ Left ZeroDiv else return $ Right (Env.VInt (mod i1 i2), st')
+
+exprToVal (Abs.ExprMul e1 e2) ev st te =
+    do x <- arithmeticExpr e1 e2 ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (i1, i2, st') -> return $ Right (Env.VInt (i1 * i2), st')
+
+exprToVal (Abs.ExprDiv e1 e2) ev st te =
+    do x <- arithmeticExpr e1 e2 ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (i1, i2, st') -> if i2 == 0 then return $ Left ZeroDiv else return $ Right (Env.VInt (i1 `div` i2), st')
+
 
 
 
@@ -153,12 +305,21 @@ exprToVal (Abs.ExprCall var exprs) ev st te =
                        case xxx of
                         Left e -> return $ Left e
                         Right (_, st''', _, v) -> return $ Right (v, st''')
-exprToVal (Abs.ExprAdd e1 e2) ev st te =
-    do x <- arithmeticExpr e1 e2 ev st te
+
+
+association :: Abs.Var -> Abs.Expr -> Env.Environment -> Env.State -> Env.TypeEnv -> (Int -> Int -> Int) -> 
+    IO (Either RuntimeError (Env.Value, Env.State))
+association var expr ev st te f = 
+    do x <- varToVal var ev st te
        case x of
         Left e -> return $ Left e
-        Right (i1, i2, st') -> return $ Right (Env.VInt (i1 + i2), st')
-
+        Right (Env.VInt i1, st') ->
+            do xx <- exprToVal expr ev st' te
+               case xx of
+                Left e -> return $ Left e
+                Right (Env.VInt i2, st'') ->
+                    let v = toInteger $ f i1 i2 in
+                        exprToVal (Abs.ExprAss var (Abs.ExprVal (Abs.ValInt v))) ev st'' te
 
 
 valToVal :: Abs.Val -> Env.Value
@@ -183,15 +344,20 @@ varToVal (Abs.VarArr var expr) ev st te =
                 Right (idx, st'') -> case Env.getValFromArray idx arr of
                     Left e -> return $ Left $ EnvErr e
                     Right l -> return $ Right (Env.getValue l st'', st'')
-varToVal (Abs.VarRec var nm) ev st te = let l = Env.getVariable nm ev in
-        case Env.getValue l st of
-            (Env.VStruct ev') -> varToVal var ev' st te
+varToVal (Abs.VarRec var nm) ev st te = 
+    do x <- varToVal var ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (Env.VStruct ev', st') -> return $ Right (Env.getValue (Env.getVariable nm ev') st', st')
 
 varToLoc :: Abs.Var -> Env.Environment -> Env.State -> Env.TypeEnv -> IO (Either RuntimeError (Env.Loc, Env.State))
 varToLoc (Abs.VarVar nm) ev st te = return $ Right (Env.getVariable nm ev, st)
-varToLoc (Abs.VarRec var nm) ev st te = let l = Env.getVariable nm ev in
-        case Env.getValue l st of
-            (Env.VStruct ev') -> varToLoc var ev' st te
+varToLoc (Abs.VarRec var nm) ev st te =
+    do x <- varToVal var ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (Env.VStruct ev', st') -> let l = Env.getVariable nm ev' in
+            return $ Right (l, st')
 varToLoc (Abs.VarArr var expr) ev st te = 
     do x <- varToVal var ev st te
        case x of
