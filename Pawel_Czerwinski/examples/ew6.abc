@@ -1,0 +1,7 @@
+{
+    struct s {
+        int a;
+    };
+};
+
+s x; // type s do not exist!

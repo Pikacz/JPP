@@ -1,0 +1,4 @@
+char c = 'i';
+
+c++; // ++ works only with int!
+

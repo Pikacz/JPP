@@ -1,0 +1,37 @@
+string ss = "abcd";
+println ss;
+
+char c = ss[1];
+
+println c;
+
+
+char xc[12];
+
+println xc; // default values (default char == 'c')
+
+int i = 0;
+
+// hehe :D
+
+for (void lol(int i, char c) { xc[i] = c;} ; i < 12; 1 + 1) {
+    lol(i, 'z');
+    i++;
+}; 
+println xc;
+
+
+int xxc [12];
+
+for (int i = 0; i < 12; ++i) {
+    xxc[i] = i * i;
+};
+
+println xxc;
+
+xc = ss; // string is array of chars
+xc[1] = 'H';
+
+println xc;
+
+println ss; // xc and ss are pointers

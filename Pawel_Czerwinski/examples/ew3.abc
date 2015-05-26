@@ -1,0 +1,7 @@
+char c = 'c';
+{
+    int c = 6;
+
+};
+int k = c; // c is char not int !
+

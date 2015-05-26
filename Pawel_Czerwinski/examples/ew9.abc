@@ -1,0 +1,3 @@
+void asd() {
+    if (2 == 1) return 1 fi; // shoulld return void!
+};

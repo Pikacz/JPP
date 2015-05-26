@@ -1,0 +1,12 @@
+struct s {
+    int x;
+};
+{
+    struct s {
+        int a;
+    };
+};
+
+s x;
+
+x.a = 11; // this s do not have member named a!

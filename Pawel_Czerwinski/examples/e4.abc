@@ -1,0 +1,18 @@
+struct ftw {
+    void x() {
+        println "ftw::x()";
+    };
+    int a = 5;
+    void cos() {
+        a = 11;
+    };
+};
+
+ftw z;
+ftw zz;
+z.x();
+
+println z.a;
+z.cos();
+println z.a;
+println zz.a;

@@ -1,0 +1,18 @@
+// recursion example
+
+
+void collatz(int i) {
+    println i;
+    if (i <= 1) {
+        println "end";
+        return;
+    } fi;
+
+    if ( i % 2 == 0) 
+        collatz (i/2)
+    else
+        collatz (3*i + 1);
+};
+
+println "Collatz sequence";
+collatz (10);

@@ -1,0 +1,31 @@
+struct s1 {
+    int y = 12;
+    struct s2 {
+        int x = 11;
+        void print_x () {
+            print "x == ";
+            println x;
+        };
+        
+        void change_x_n_y(int nx, int ny) {
+            y = ny;
+            x = nx;
+        };
+    };
+    
+    s2 abc; 
+    void print_y() {
+        print "y == ";
+        println y;
+    };
+
+};
+
+s1 xx;
+
+xx.print_y();
+xx.abc.print_x();
+xx.abc.change_x_n_y(2, 0-1);
+xx.print_y();
+xx.abc.print_x();
+

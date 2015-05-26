@@ -1,0 +1,5 @@
+void asd(int& i) {
+    i++;
+};
+
+asd(12); // you have to pass variable ass reference

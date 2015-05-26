@@ -1,0 +1,5 @@
+int asd() {
+    if (11 > 2)
+        return 1 fi;
+    // functon do not have to return value!
+};

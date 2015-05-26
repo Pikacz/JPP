@@ -1,0 +1,12 @@
+//this example will cause stack overflow
+
+void a() {
+    print "a";
+    void b() {
+        print "b";
+        a();
+    };
+    b();
+};
+
+a();

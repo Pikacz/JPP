@@ -1,0 +1,30 @@
+int fib (int n, int &c) {
+    ++c;
+    if (n == 0)
+        return 0
+    else if (n == 1)
+        return 1
+    else
+        return fib(n-1, c) + fib (n-2, c);
+};
+
+println "fibonacci sequence";
+int count = 0;
+
+for (int i = 0; i < 4; ++i) {
+    print i;
+    print " : ";
+    print fib (i, count);
+    print "\n";
+};
+
+int k = 4;
+while (k < 7) {
+    print k;
+    print " : ";
+    print fib (k, count);
+    print "\n";
+    k++;
+};
+print "total number of fib calls : ";
+println count;

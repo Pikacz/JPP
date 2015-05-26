@@ -1,0 +1,13 @@
+void change_int(int &l) {
+    l++;
+};
+
+
+int a = 2;
+change_int(a);
+println a;
+
+int xx[12];
+xx[1] = 23;
+change_int(xx[1]);
+println xx;

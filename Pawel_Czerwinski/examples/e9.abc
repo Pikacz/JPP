@@ -1,0 +1,14 @@
+void a () {
+    print "a";
+    void b() {
+        print "b";
+        void c() {
+            print "c";
+        };
+        c();
+    };
+    b();
+};
+a();
+
+println "";
