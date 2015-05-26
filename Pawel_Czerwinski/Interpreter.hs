@@ -75,8 +75,35 @@ runStm (Abs.StmPrint expr) ev st te =
        case x of
         Left e -> return $ Left e
         Right (v, st') ->
-            do print v
-               return $ Right (ev, st', te, Env.VNothing)
+            case v of
+                Env.VArray locs -> 
+                    do putStr $ printArrTmp locs st'
+                       return $ Right (ev, st', te, Env.VNothing)
+                _ -> do putStr $ show v
+                        return $ Right (ev, st', te, Env.VNothing)
+runStm (Abs.StmPrintLn expr) ev st te = 
+    do x <- exprToVal expr ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (v, st') -> case v of
+            Env.VArray locs -> 
+                do putStrLn $ printArrTmp locs st'
+                   return $ Right (ev, st', te, Env.VNothing)
+            _ -> do print v
+                    return $ Right (ev, st', te, Env.VNothing)
+
+printArrTmp :: [Env.Loc] -> Env.State -> String
+printArrTmp [] st = ""
+printArrTmp (l : ls) st = case Env.getValue l st of
+    Env.VChar c -> c : (printArrTmp' ls st)
+    v -> '[' : (show v) ++ (printArrTmp' ls st) ++ "]"
+ 
+
+printArrTmp' :: [Env.Loc] -> Env.State -> String
+printArrTmp' [] st = ""
+printArrTmp' (l : ls) st = case Env.getValue l st of
+    Env.VChar c -> c :  (printArrTmp' ls st)
+    v -> ", " ++ (show v) ++ (printArrTmp' ls st) 
 
 runBloc :: [Abs.Stm] -> Env.Environment -> Env.State -> Env.TypeEnv -> Env.Environment -> Env.TypeEnv ->
      IO (Either RuntimeError (Env.Environment, Env.State, Env.TypeEnv, Env.Value))
@@ -94,8 +121,14 @@ runDec :: Abs.Dec -> Env.Environment -> Env.State -> Env.TypeEnv -> IO (Either R
          (Either (Abs.Ident, Env.Value, Env.State) 
                  (Env.TypeName, Env.Type, Env.State)))
 runDec (Abs.DVar at nm) ev st te = case Env.getTypeAbs at te of
-        Right t -> let (v, st') = Env.defValue t st ev in
-            return $ Right $ Left (nm, v, st')
+        Right t -> case t of 
+            Env.TStruct te _ decs ev -> 
+                do xx <- createStruct' decs ev st te Env.emptyEnvironment 
+                   case xx of
+                    Left e -> return $ Left e
+                    Right (v, st') -> return $ Right $ Left (nm, v, st')
+            _ -> let (v, st') = Env.defValue t st ev in
+                return $ Right $ Left (nm, v, st')
 runDec (Abs.DInit at nm expr) ev st te = 
     do x <- exprToVal expr ev st te
        case x of
@@ -110,7 +143,7 @@ runDec (Abs.DArr at nm expr) ev st te =
                 let l = Env.next st'' in
                     return $ Right $ Left (nm, v, st'')
 runDec (Abs.DRec (Abs.Ident nm) decs) ev st te =
-    do x <- runDecs decs ev st te Env.emptySE
+    do x <- runDecs decs ev st te Env.emptySE decs
        case x of
         Left e -> return $ Left e
         Right (t, st') -> return $ Right $ Right (nm, t, st')
@@ -123,17 +156,37 @@ runDec (Abs.DFunc t nm params stm) ev st te = let par = Env.tParamsToVParams par
 
 
 
--- parses declarations into struct
-runDecs :: [Abs.Dec] -> Env.Environment -> Env.State -> Env.TypeEnv -> Env.StructEnv -> IO (Either RuntimeError (Env.Type, Env.State))
-runDecs [] ev st te acc = return $ Right (Env.TStruct Env.emptyTypeEnv acc, st)
-runDecs (dec : ds) ev st te acc = 
+
+createStruct' :: [Abs.Dec] -> Env.Environment -> Env.State -> Env.TypeEnv -> Env.Environment ->
+    IO (Either RuntimeError (Env.Value, Env.State))
+createStruct' [] ev st te sev = return $ Right (Env.VStruct sev, st)
+createStruct' (dec : ds) ev st te sev =
     do x <- runDec dec ev st te
        case x of
         Left e -> return $ Left e
-        Right (Left (nm, val, st')) -> let acc' = Env.addToSE nm val acc in
-            runDecs ds ev st' te acc'
+        Right ( Left (nm, val, st')) -> let l = Env.next st' in
+            let sev' = Env.addVariable nm l sev
+                ev' = Env.addVariable nm l ev
+                st'' = Env.addValue l val st' in
+                    createStruct' ds ev' st'' te sev'
+        Right ( Right (n, t, st')) -> let te' = Env.insertType n t te in
+            createStruct' ds ev st' te' sev
+
+-- parses declarations into struct
+runDecs :: [Abs.Dec] -> Env.Environment -> Env.State -> Env.TypeEnv -> Env.StructEnv -> [Abs.Dec] ->
+    IO (Either RuntimeError (Env.Type, Env.State))
+runDecs [] ev st te acc dacc= return $ Right (Env.TStruct Env.emptyTypeEnv acc dacc ev, st)
+runDecs (dec : ds) ev st te acc dacc = 
+    do x <- runDec dec ev st te
+       case x of
+        Left e -> return $ Left e
+        Right (Left (nm, val, st')) -> let acc' = Env.addToSE nm val acc 
+                                           l = Env.next st' in
+            let ev' = Env.addVariable nm l ev
+                st'' = Env.addValue l val st' in
+                    runDecs ds ev' st'' te acc' dacc
         Right (Right (nm, t, st')) -> let te' = Env.insertType nm t te in
-            runDecs ds ev st' te' acc
+            runDecs ds ev st' te' acc dacc
 
 
 
@@ -291,13 +344,13 @@ exprToVal (Abs.ExprDiv e1 e2) ev st te =
 
 
 exprToVal (Abs.ExprVar var) ev st te = varToVal var ev st te
-exprToVal (Abs.ExprVal val) _ st te = return $ Right (valToVal val, st)
+exprToVal (Abs.ExprVal val) _ st te = let (v, st') = valToVal val st in return $ Right (v, st')
 exprToVal (Abs.ExprCall var exprs) ev st te = 
     do x <- varToVal var ev st te
        case x of
         Left e -> return $ Left e
         Right ((Env.VFunc params stm fev), st') ->
-            do xx <- paramsToEnv params exprs fev st' te
+            do xx <- paramsToEnv params exprs fev ev st' te
                case xx of
                 Left e -> return $ Left e
                 Right (ev', st'') -> 
@@ -322,12 +375,19 @@ association var expr ev st te f =
                         exprToVal (Abs.ExprAss var (Abs.ExprVal (Abs.ValInt v))) ev st'' te
 
 
-valToVal :: Abs.Val -> Env.Value
-valToVal (Abs.ValInt i) = Env.VInt $ fromInteger i
-valToVal (Abs.ValChar c) = Env.VChar c
-valToVal (Abs.ValStr s) = Env.VString s
-valToVal Abs.ValTrue = Env.VBool True
-valToVal Abs.ValFalse = Env.VBool False
+tmpStringVal :: [Char] -> Env.State -> [Env.Loc] -> ([Env.Loc], Env.State)
+tmpStringVal [] st acc = (reverse acc, st)
+tmpStringVal (h : hs) st acc = let l = Env.next st in
+    let st' = Env.addValue l (Env.VChar h) st in
+        tmpStringVal hs st' (l : acc)
+
+
+valToVal :: Abs.Val -> Env.State -> (Env.Value, Env.State)
+valToVal (Abs.ValInt i) st = (Env.VInt $ fromInteger i, st)
+valToVal (Abs.ValChar c) st = (Env.VChar c, st)
+valToVal (Abs.ValStr s) st = let (locs, st') = tmpStringVal s st [] in (Env.VArray locs, st')
+valToVal Abs.ValTrue st = (Env.VBool True, st)
+valToVal Abs.ValFalse st = (Env.VBool False, st)
 
 
 varToVal :: Abs.Var -> Env.Environment -> Env.State -> Env.TypeEnv -> IO (Either RuntimeError (Env.Value, Env.State))
@@ -337,7 +397,7 @@ varToVal (Abs.VarArr var expr) ev st te =
     do x <- varToVal var ev st te
        case x of
         Left e -> return $ Left e
-        Right (arr, st') -> 
+        Right (arr@(Env.VArray _), st') -> 
             do xx <- exprToVal expr ev st' te
                case xx of
                 Left e -> return $ Left e
@@ -370,24 +430,26 @@ varToLoc (Abs.VarArr var expr) ev st te =
                     Left e -> return $ Left $ EnvErr e
                     Right l -> return $ Right (l, st'') 
 
-paramsToEnv :: [Env.Param] -> [Abs.Expr] -> Env.Environment -> Env.State -> Env.TypeEnv -> IO (Either RuntimeError (Env.Environment, Env.State))
-paramsToEnv [] [] ev st te = return $ Right (ev, st)
-paramsToEnv (p : ps) (e : es) ev st te = case p of
+paramsToEnv :: [Env.Param] -> [Abs.Expr] -> Env.Environment -> Env.Environment -> Env.State -> Env.TypeEnv ->
+    IO (Either RuntimeError (Env.Environment, Env.State))
+paramsToEnv [] [] fev ev st te = return $ Right (fev, st)
+paramsToEnv (p : ps) (e : es) fev ev st te = case p of
         Env.Val nm ->  
-            do x <- exprToVal e ev st te
+            do 
+               x <- exprToVal e ev st te
                case x of
                 Left e -> return $ Left e
                 Right (v, st') -> let l = Env.next st' in
-                    let ev' = Env.addVariable nm l ev
+                    let fev' = Env.addVariable nm l fev
                         st'' = Env.addValue l v st' in
-                        paramsToEnv ps es ev' st'' te
+                        paramsToEnv ps es fev' ev st'' te
         Env.Ref nm -> case e of
             (ExprVar var) -> 
                 do x <- varToLoc var ev st te
                    case x of
                     Left e -> return $ Left e
-                    Right (l, st') -> let ev' = Env.addVariable nm l ev in
-                        paramsToEnv ps es ev' st' te
+                    Right (l, st') -> let fev' = Env.addVariable nm l fev in
+                        paramsToEnv ps es fev' ev st' te
 
 arithmeticExpr :: Abs.Expr -> Abs.Expr -> Env.Environment -> Env.State -> Env.TypeEnv -> IO (Either RuntimeError (Int, Int, Env.State))
 arithmeticExpr e1 e2 ev st te =

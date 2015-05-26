@@ -31,6 +31,7 @@ transStm x = case x of
   StmRet  -> failure x
   StmRetV expr  -> failure x
   StmPrint expr  -> failure x
+  StmPrintLn expr  -> failure x
   StmRead var  -> failure x
 
 

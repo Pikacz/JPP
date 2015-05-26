@@ -23,6 +23,7 @@ data Stm =
  | StmRet
  | StmRetV Expr
  | StmPrint Expr
+ | StmPrintLn Expr
  | StmRead Var
   deriving (Eq,Ord,Show,Read)
 

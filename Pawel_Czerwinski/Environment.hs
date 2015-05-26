@@ -11,13 +11,22 @@ data Type =
     | TStr
     | TVoid
     | TArray Type Int
-    | TStruct TypeEnv StructEnv
+    | TStruct TypeEnv StructEnv [Abs.Dec] Environment
     | TFunc [(ParamName, ParamType)] ReturnType
         deriving (Show, Eq)
 
 structFromList:: [ (TypeName, Type) ] -> Type
-structFromList l = TStruct (typeEnvFromList l) emptySE
+structFromList l = TStruct (typeEnvFromList l) emptySE [] emptyEnvironment
 
+
+data StructEnv = StructEnv (Map.Map VariableName Value) deriving (Show, Eq)
+
+emptySE::StructEnv
+emptySE = StructEnv Map.empty
+
+
+addToSE :: Abs.Ident -> Value -> StructEnv -> StructEnv
+addToSE (Abs.Ident nm) val (StructEnv se) = StructEnv $ Map.insert nm val se
 
 type TypeName = String
 
@@ -27,20 +36,12 @@ data TypeEnv =
         deriving (Show, Eq)
 
 
-data StructEnv = StructEnv (Map.Map VariableName Value)
-        deriving (Show, Eq)
-
-emptySE :: StructEnv
-emptySE = StructEnv $ Map.empty
-
-addToSE :: Abs.Ident -> Value -> StructEnv -> StructEnv
-addToSE (Abs.Ident nm) val (StructEnv se) = StructEnv $ Map.insert nm val se 
 
 basicTypes :: [ (TypeName, Type) ]
 basicTypes = [ ("int", TInt)
              , ("bool", TBool)
              , ("char", TChar)
-             , ("string", TStr)
+             , ("string", TArray TChar 0)
              , ("void", TVoid) ]
 
 
@@ -79,7 +80,7 @@ getTypeAbs :: Abs.Type -> TypeEnv -> Either EnvError Type
 getTypeAbs Abs.TInt _ = Right TInt
 getTypeAbs Abs.TBool _ = Right TBool
 getTypeAbs Abs.TChar _ = Right TChar
-getTypeAbs Abs.TStr _ = Right TStr
+getTypeAbs Abs.TStr _ = Right $ TArray TChar 0
 getTypeAbs Abs.TVoid _ = Right TVoid
 getTypeAbs (Abs.TArr t) tv = case getTypeAbs t tv of
             Right t -> Right $ TArray t 0
@@ -119,7 +120,7 @@ defValue TChar st _ = (VChar 'c', st)
 defValue TStr st _ = (VString "", st)
 defValue TBool st _ = (VBool False, st)
 defValue (TArray t i) st ev = arrDef t st ev i []
-defValue (TStruct _ (StructEnv ev)) st e = let atrs = Map.toList ev in
+defValue (TStruct _ (StructEnv ev) decs sev) st e = let atrs = Map.toList ev in
             structDef atrs st e emptyEnvironment
 
 

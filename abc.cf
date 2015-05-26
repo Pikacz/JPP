@@ -15,6 +15,7 @@ StmFor.     Stm ::= "for" "(" Dec ";" Expr ";" Stm ")" Stm ;
 StmRet.     Stm ::= "return" ;
 StmRetV.    Stm ::= "return" Expr ;
 StmPrint.   Stm ::= "print" Expr ;
+StmPrintLn. Stm ::= "println" Expr ;
 StmRead.    Stm ::= "read" Var ;
 
 

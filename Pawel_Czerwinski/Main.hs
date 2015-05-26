@@ -2,8 +2,8 @@
 module Main where
 
 
-import System.IO ( stdin, hGetContents )
-import System.Environment ( getArgs, getProgName )
+import System.IO
+import System.Environment
 import System.Exit ( exitFailure, exitSuccess )
 
 import Lexabc
@@ -52,10 +52,17 @@ showTree v tree
 
 
 main = do
-    s <- getContents 
-    let Ok e = pProgram (myLexer s)
-    interpret e
-    putStrLn ""
+    args <- getArgs
+    case args of
+        (filename : _) -> do
+            handle <- openFile filename ReadMode
+            s <- hGetContents handle
+            let Ok e = pProgram (myLexer s)
+            interpret e
+        _ -> do
+            s <- getContents 
+            let Ok e = pProgram (myLexer s)
+            interpret e
   
 {-
 abc s = 

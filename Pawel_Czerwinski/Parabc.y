@@ -73,17 +73,18 @@ import ErrM
   'if' { PT _ (TS _ 36) }
   'int' { PT _ (TS _ 37) }
   'print' { PT _ (TS _ 38) }
-  'read' { PT _ (TS _ 39) }
-  'return' { PT _ (TS _ 40) }
-  'string' { PT _ (TS _ 41) }
-  'struct' { PT _ (TS _ 42) }
-  'true' { PT _ (TS _ 43) }
-  'void' { PT _ (TS _ 44) }
-  'while' { PT _ (TS _ 45) }
-  '{' { PT _ (TS _ 46) }
-  '||' { PT _ (TS _ 47) }
-  '}' { PT _ (TS _ 48) }
-  '~' { PT _ (TS _ 49) }
+  'println' { PT _ (TS _ 39) }
+  'read' { PT _ (TS _ 40) }
+  'return' { PT _ (TS _ 41) }
+  'string' { PT _ (TS _ 42) }
+  'struct' { PT _ (TS _ 43) }
+  'true' { PT _ (TS _ 44) }
+  'void' { PT _ (TS _ 45) }
+  'while' { PT _ (TS _ 46) }
+  '{' { PT _ (TS _ 47) }
+  '||' { PT _ (TS _ 48) }
+  '}' { PT _ (TS _ 49) }
+  '~' { PT _ (TS _ 50) }
 
 L_ident  { PT _ (TV $$) }
 L_integ  { PT _ (TI $$) }
@@ -118,6 +119,7 @@ Stm : Expr { StmExpr $1 }
   | 'return' { StmRet }
   | 'return' Expr { StmRetV $2 }
   | 'print' Expr { StmPrint $2 }
+  | 'println' Expr { StmPrintLn $2 }
   | 'read' Var { StmRead $2 }
 
 

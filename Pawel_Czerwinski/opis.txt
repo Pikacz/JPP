@@ -1,19 +1,53 @@
 kompilacja make
 uruchomienie ./interpreter < program.abc
+lub ./interpreter program.abc
 
 w założeniach miał być to język podobny do c
 
-w stosunku do projektu została zmieniona składnia ifa na
-if (wyrazenie True / False) STM fi
-została dodana instrukcja print wartość
-przy czym nie wspiera wypisywania structa lub tablicy (wypisze "Struct" / "Array")
+przykłady w /examples
+	e_.abc - poprawny program
+	ew_.abc - błędny
 
 
-przed uruchomieniem programu następuje sprwdzenie typów
+typy :
+bool
+char
+int
+string (przeslonienie tablicy)
+tablice : rozmiar podany podczas deklaracji
+	  możliwe przypisanie innej tablicy tego samego typu (ale innego rozmiaru) 
+rekordy : możliwość ustalenia wartości domyślnej
+	  możliwość deklaracji funkcji
+	  funkcje mogą zmieniać wartości zmiennych obiektu, jak i zmiennych globalnych
 
-możliwe jest przesłanianie zmiennych nowymi zmiennymi tego samego typu
 
-funkcje widzą środowisko sprzed ich deklaracji
+arytmetyka:
++, *, %, -, /        :: int -> int -> int
+>, >=, ==, /=, <=, < :: int -> int -> bool
 
-możliwe są wywołania rekurencyjne niestety przekazywanie parametrów rekurencyjnie jest zabugowane (poprawie w ciągu doby)
-funkcje wewnątrz structa również :<
+funckcje: mogą zwracać dowolny typ (w tym rekordy)
+	  przekazywanie arumentw przez referencje i wartość
+
+print/println : - wypisuje każdy typ podstawowy + tablice
+		- nie wspiera rekordow
+
+
+operatory:
+++, --, += ... działające na intach
+
+
+
+instrukcje:
+
+if (<bool>) .. fi
+if (<bool>) .. else ..  
+while (<bool>) ..
+for (deklaracja ; warunek; wyrazenie) .. // mozliwa deklaracja funkcji w miejscu deklaracji
+
+
+sprawdzenie typów przed wykonaniem programu
+błędy wykonania : obsługa dzielenia przez 0
+
+definicje funkcji mogą być dowolnie zagnieżdżone
+
+w sumie to z wymagań nie ma jedynie podpunktów c,..,g z punktu 5 (na 20p)

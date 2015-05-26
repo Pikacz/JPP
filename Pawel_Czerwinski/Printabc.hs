@@ -100,6 +100,7 @@ instance Print Stm where
    StmRet  -> prPrec i 0 (concatD [doc (showString "return")])
    StmRetV expr -> prPrec i 0 (concatD [doc (showString "return") , prt 0 expr])
    StmPrint expr -> prPrec i 0 (concatD [doc (showString "print") , prt 0 expr])
+   StmPrintLn expr -> prPrec i 0 (concatD [doc (showString "println") , prt 0 expr])
    StmRead var -> prPrec i 0 (concatD [doc (showString "read") , prt 0 var])
 
   prtList es = case es of
