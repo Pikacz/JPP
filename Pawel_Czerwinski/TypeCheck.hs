@@ -328,7 +328,7 @@ instance Show TypeError where
     show (ExceptedArray var) =
         (show var) ++ " do not refer to array type :c"
     show (ExceptedVariable expr) =
-        (show expr) ++ " is not variable ;_;"
+        (show expr) ++ " is not variable"
     show (VoidVariable) =
         "void can't be type of variable"
     show (IncorrectArrayDec) =

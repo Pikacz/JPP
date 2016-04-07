@@ -473,7 +473,7 @@ data RuntimeError =
 interpret:: Program -> IO ()
 interpret p = case TC.parseProg p TC.emptyVariableType Env.emptyTypeEnv of
         Nothing ->
-            do putStrLn "type check was succesfull!"
+            do putStrLn "type check was succesful!"
                runProgram p Env.emptyEnvironment Env.emptyState Env.emptyTypeEnv
                
                 

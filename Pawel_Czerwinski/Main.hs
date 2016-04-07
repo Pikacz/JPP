@@ -50,6 +50,9 @@ showTree v tree
       putStrV v $ "\n[Abstract Syntax]\n\n" ++ show tree
       putStrV v $ "\n[Linearized tree]\n\n" ++ printTree tree
 
+doInterpret (Ok e) = interpret e 
+doInterpret (Bad s) = putStrLn s
+
 
 main = do
     args <- getArgs
@@ -57,12 +60,10 @@ main = do
         (filename : _) -> do
             handle <- openFile filename ReadMode
             s <- hGetContents handle
-            let Ok e = pProgram (myLexer s)
-            interpret e
+            doInterpret $ pProgram $ myLexer s
         _ -> do
             s <- getContents 
-            let Ok e = pProgram (myLexer s)
-            interpret e
+            doInterpret $ pProgram $ myLexer s
   
 {-
 abc s = 
