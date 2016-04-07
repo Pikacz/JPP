@@ -38,8 +38,7 @@ run v p s = let ts = myLLexer s in case p ts of
                           putStrLn s
                           exitFailure
            Ok  tree -> do putStrLn "\nParse Successful!"
-                          showTree v tree
-                         -- putStrLn $ show ( kupa tree) 
+                          showTree v tree 
 
                           exitSuccess
 
@@ -64,20 +63,4 @@ main = do
         _ -> do
             s <- getContents 
             doInterpret $ pProgram $ myLexer s
-  
-{-
-abc s = 
-      let Ok e = pProgram (myLexer s) 
-      in  (interpret e) -}
-
---main :: IO ()
---main = do args <- getArgs
---          case args of
---            [] -> hGetContents stdin >>= run 2 pProgram
---            "-s":fs -> mapM_ (runFile 0 pProgram) fs
---            fs -> mapM_ (runFile 2 pProgram) fs
-
-
-
-
 
