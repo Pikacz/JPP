@@ -1,0 +1,9 @@
+int a = 1;
+auto b = a;
+auto c = "asdas";
+
+print a;
+print b;
+print c;
+auto d = a + b;
+print d;

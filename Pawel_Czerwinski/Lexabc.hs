@@ -2,12 +2,10 @@
 {-# LINE 3 "Lexabc.x" #-}
 
 {-# OPTIONS -fno-warn-incomplete-patterns #-}
-{-# OPTIONS_GHC -w #-}
 module Lexabc where
 
 
 
-import qualified Data.Bits
 import Data.Word (Word8)
 
 #if __GLASGOW_HASKELL__ >= 603
@@ -41,10 +39,9 @@ alex_deflt :: AlexAddr
 alex_deflt = AlexA# "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x0e\x00\x0e\x00\x02\x00\x02\x00\xff\xff\x10\x00\xff\xff\x10\x00\x15\x00\x15\x00\xff\xff\xff\xff\xff\xff\x16\x00\x16\x00\x16\x00\x16\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"#
 
 alex_accept = listArray (0::Int,34) [AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccSkip,AlexAccSkip,AlexAcc (alex_action_2),AlexAcc (alex_action_2),AlexAcc (alex_action_2),AlexAcc (alex_action_2),AlexAcc (alex_action_2),AlexAcc (alex_action_2),AlexAcc (alex_action_2),AlexAcc (alex_action_3),AlexAcc (alex_action_4),AlexAcc (alex_action_5),AlexAcc (alex_action_6)]
-{-# LINE 37 "Lexabc.x" #-}
+{-# LINE 35 "Lexabc.x" #-}
 
 
-tok :: (Posn -> String -> Token) -> (Posn -> String -> Token)
 tok f p s = f p s
 
 share :: String -> String
@@ -60,30 +57,18 @@ data Tok =
 
  deriving (Eq,Show,Ord)
 
-data Token =
+data Token = 
    PT  Posn Tok
  | Err Posn
   deriving (Eq,Show,Ord)
 
-tokenPos :: [Token] -> String
 tokenPos (PT (Pn _ l _) _ :_) = "line " ++ show l
 tokenPos (Err (Pn _ l _) :_) = "line " ++ show l
 tokenPos _ = "end of file"
 
-tokenPosn :: Token -> Posn
-tokenPosn (PT p _) = p
-tokenPosn (Err p) = p
-
-tokenLineCol :: Token -> (Int, Int)
-tokenLineCol = posLineCol . tokenPosn
-
-posLineCol :: Posn -> (Int, Int)
 posLineCol (Pn _ l c) = (l,c)
-
-mkPosToken :: Token -> ((Int, Int), String)
 mkPosToken t@(PT p _) = (posLineCol p, prToken t)
 
-prToken :: Token -> String
 prToken t = case t of
   PT _ (TS s _) -> s
   PT _ (TL s)   -> s
@@ -103,8 +88,7 @@ eitherResIdent tv s = treeFind resWords
                               | s > a  = treeFind right
                               | s == a = t
 
-resWords :: BTree
-resWords = b ">=" 26 (b "," 13 (b ")" 7 (b "&" 4 (b "%" 2 (b "!=" 1 N N) (b "%=" 3 N N)) (b "(" 6 (b "&&" 5 N N) N)) (b "+" 10 (b "*=" 9 (b "*" 8 N N) N) (b "+=" 12 (b "++" 11 N N) N))) (b ";" 20 (b "." 17 (b "--" 15 (b "-" 14 N N) (b "-=" 16 N N)) (b "/=" 19 (b "/" 18 N N) N)) (b "=" 23 (b "<=" 22 (b "<" 21 N N) N) (b ">" 25 (b "==" 24 N N) N)))) (b "println" 39 (b "false" 33 (b "bool" 30 (b "[]" 28 (b "[" 27 N N) (b "]" 29 N N)) (b "else" 32 (b "char" 31 N N) N)) (b "if" 36 (b "for" 35 (b "fi" 34 N N) N) (b "print" 38 (b "int" 37 N N) N))) (b "void" 45 (b "string" 42 (b "return" 41 (b "read" 40 N N) N) (b "true" 44 (b "struct" 43 N N) N)) (b "||" 48 (b "{" 47 (b "while" 46 N N) N) (b "~" 50 (b "}" 49 N N) N))))
+resWords = b ">=" 26 (b "," 13 (b ")" 7 (b "&" 4 (b "%" 2 (b "!=" 1 N N) (b "%=" 3 N N)) (b "(" 6 (b "&&" 5 N N) N)) (b "+" 10 (b "*=" 9 (b "*" 8 N N) N) (b "+=" 12 (b "++" 11 N N) N))) (b ";" 20 (b "." 17 (b "--" 15 (b "-" 14 N N) (b "-=" 16 N N)) (b "/=" 19 (b "/" 18 N N) N)) (b "=" 23 (b "<=" 22 (b "<" 21 N N) N) (b ">" 25 (b "==" 24 N N) N)))) (b "print" 39 (b "else" 33 (b "auto" 30 (b "[]" 28 (b "[" 27 N N) (b "]" 29 N N)) (b "char" 32 (b "bool" 31 N N) N)) (b "for" 36 (b "fi" 35 (b "false" 34 N N) N) (b "int" 38 (b "if" 37 N N) N))) (b "void" 46 (b "string" 43 (b "read" 41 (b "println" 40 N N) (b "return" 42 N N)) (b "true" 45 (b "struct" 44 N N) N)) (b "||" 49 (b "{" 48 (b "while" 47 N N) N) (b "~" 51 (b "}" 50 N N) N))))
    where b s n = let bs = id s
                   in B bs (TS bs n)
 
@@ -134,57 +118,39 @@ alexMove (Pn a l c) '\t' = Pn (a+1)  l     (((c+7) `div` 8)*8+1)
 alexMove (Pn a l c) '\n' = Pn (a+1) (l+1)   1
 alexMove (Pn a l c) _    = Pn (a+1)  l     (c+1)
 
-type Byte = Word8
-
 type AlexInput = (Posn,     -- current position,
                   Char,     -- previous char
-                  [Byte],   -- pending bytes on the current char
                   String)   -- current input string
 
 tokens :: String -> [Token]
-tokens str = go (alexStartPos, '\n', [], str)
+tokens str = go (alexStartPos, '\n', str)
     where
       go :: AlexInput -> [Token]
-      go inp@(pos, _, _, str) =
+      go inp@(pos, _, str) =
                case alexScan inp 0 of
-                AlexEOF                   -> []
-                AlexError (pos, _, _, _)  -> [Err pos]
-                AlexSkip  inp' len        -> go inp'
-                AlexToken inp' len act    -> act pos (take len str) : (go inp')
+                AlexEOF                -> []
+                AlexError (pos, _, _)  -> [Err pos]
+                AlexSkip  inp' len     -> go inp'
+                AlexToken inp' len act -> act pos (take len str) : (go inp')
 
-alexGetByte :: AlexInput -> Maybe (Byte,AlexInput)
-alexGetByte (p, c, (b:bs), s) = Just (b, (p, c, bs, s))
-alexGetByte (p, _, [], s) =
+alexGetChar :: AlexInput -> Maybe (Char,AlexInput)
+alexGetChar (p, _, s) =
   case  s of
     []  -> Nothing
     (c:s) ->
-             let p'     = alexMove p c
-                 (b:bs) = utf8Encode c
-              in p' `seq` Just (b, (p', c, bs, s))
+             let p' = alexMove p c
+              in p' `seq` Just (c, (p', c, s))
+
+alexGetByte :: AlexInput -> Maybe (Word8,AlexInput)
+alexGetByte (p, _, s) =
+  case  s of
+    []  -> Nothing
+    (c:s) ->
+             let p' = alexMove p c
+              in p' `seq` Just ((fromIntegral $ ord c), (p', c, s))
 
 alexInputPrevChar :: AlexInput -> Char
-alexInputPrevChar (p, c, bs, s) = c
-
--- | Encode a Haskell String to a list of Word8 values, in UTF8 format.
-utf8Encode :: Char -> [Word8]
-utf8Encode = map fromIntegral . go . ord
- where
-  go oc
-   | oc <= 0x7f       = [oc]
-
-   | oc <= 0x7ff      = [ 0xc0 + (oc `Data.Bits.shiftR` 6)
-                        , 0x80 + oc Data.Bits..&. 0x3f
-                        ]
-
-   | oc <= 0xffff     = [ 0xe0 + (oc `Data.Bits.shiftR` 12)
-                        , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)
-                        , 0x80 + oc Data.Bits..&. 0x3f
-                        ]
-   | otherwise        = [ 0xf0 + (oc `Data.Bits.shiftR` 18)
-                        , 0x80 + ((oc `Data.Bits.shiftR` 12) Data.Bits..&. 0x3f)
-                        , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)
-                        , 0x80 + oc Data.Bits..&. 0x3f
-                        ]
+alexInputPrevChar (p, c, s) = c
 
 alex_action_2 =  tok (\p s -> PT p (eitherResIdent (TV . share) s)) 
 alex_action_3 =  tok (\p s -> PT p (eitherResIdent (TV . share) s)) 

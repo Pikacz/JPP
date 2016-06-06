@@ -24,14 +24,15 @@ terminator Dec ";" ;
 
 DVar.   Dec ::= Type Ident ;
 DInit.  Dec ::= Type Ident "=" Expr ;
+DAuto.  Dec ::= "auto" Ident "=" Expr ;
 DArr.   Dec ::= Type Ident "[" Expr "]" ;
-DRec.   Dec ::= "struct" Ident "{" [Dec] "}" ; 
+DRec.   Dec ::= "struct" Ident "{" [Dec] "}" ;
 DFunc.  Dec ::= Type Ident "(" [Param] ")" Stm ;
 
 separator Param "," ;
 
 PVal.  Param ::= Type Ident ;
-PVar.  Param ::= Type "&" Ident ; 
+PVar.  Param ::= Type "&" Ident ;
 
 -- Types
 
@@ -103,6 +104,3 @@ _.          Var  ::= Var1 ;
 VarRec.     Var1 ::= Var "." Ident ;
 _.          Var1 ::= Var2 ;
 VarVar.     Var2 ::= Ident ;
-
-
-

@@ -29,10 +29,10 @@ exprToType (Abs.ExprGt e1 e2) vt te = check2Types e1 e2 vt te Env.TInt Env.TBool
 exprToType (Abs.ExprAss var expr) vt te = checkAssociation var expr vt te
 exprToType (Abs.ExprAssO var _ expr) vt te = checkAssociationO var expr vt te
 -- ++ / --
-exprToType (Abs.ExprIR var) vt te = checkInc var vt te 
-exprToType (Abs.ExprIL var) vt te = checkInc var vt te 
-exprToType (Abs.ExprDR var) vt te = checkInc var vt te 
-exprToType (Abs.ExprDL var) vt te = checkInc var vt te 
+exprToType (Abs.ExprIR var) vt te = checkInc var vt te
+exprToType (Abs.ExprIL var) vt te = checkInc var vt te
+exprToType (Abs.ExprDR var) vt te = checkInc var vt te
+exprToType (Abs.ExprDL var) vt te = checkInc var vt te
 -- call
 exprToType (Abs.ExprCall var exprs) vt te = case varToType var vt te of
                     Left e -> Left e
@@ -104,8 +104,8 @@ checkParams (e : es) ((pn, pt) : ps) vt te = case pt of
             Right t' -> if t == t' then checkParams es ps vt te else Just $ WrongType {expected=t, actual=t'}
         Env.PVal t -> case exprToType e vt te of
             Left e -> Just e
-            Right t' -> if t == t' then checkParams es ps vt te else Just $ WrongType {expected=t, actual=t'} 
-        
+            Right t' -> if t == t' then checkParams es ps vt te else Just $ WrongType {expected=t, actual=t'}
+
 
 
 isVariable :: Abs.Expr -> VariableType -> Env.TypeEnv -> Either TypeError Env.Type
@@ -172,12 +172,15 @@ parseDecs (d : ds) vt te acc = case parseDec d vt te of
                                 in parseDecs ds vt' te acc'
         Right (Right (nm, t)) -> let te' = (Env.insertType nm t te)
                                 in parseDecs ds vt te' acc
-            
+
 
 -- Right Left var; Right Right type
 parseDec :: Abs.Dec -> VariableType -> Env.TypeEnv -> Either TypeError (Either (Abs.Ident, Env.Type) (Env.TypeName, Env.Type))
 parseDec (Abs.DVar t nm) vt te = case Env.getTypeAbs t te of
         Left er -> Left  (EnvError er)
+        Right tp -> Right $ Left (nm, tp)
+parseDec (Abs.DAuto nm expr) vt te = case exprToType expr vt te of
+        Left err -> Left err
         Right tp -> Right $ Left (nm, tp)
 parseDec (Abs.DInit t nm expr) vt te = case Env.getTypeAbs t te of
         Left er -> Left  (EnvError er)
@@ -203,14 +206,14 @@ parseDec (Abs.DFunc t nm params stm) vt te = case parseParams params vt te [] of
                 Left e -> Left e
                 Right (vt'', te'', t'') -> if t' /= t'' then Left ( FunctionWrongRet nm t' t'' ) else
                         Right $ Left $ (nm, (Env.TFunc fpr t' ))
-                    
+
 
 
 identToParamName :: Abs.Ident -> Env.ParamName
 identToParamName (Abs.Ident nm) = nm
 
 
-parseParams :: [Abs.Param] -> VariableType -> Env.TypeEnv -> [(Env.ParamName, Env.ParamType)] -> 
+parseParams :: [Abs.Param] -> VariableType -> Env.TypeEnv -> [(Env.ParamName, Env.ParamType)] ->
         Either TypeError (VariableType, [(Env.ParamName, Env.ParamType)])
 parseParams [] vt te acc = Right (vt, reverse acc)
 parseParams (p : ps) vt te acc = case p of
@@ -225,7 +228,7 @@ parseParams (p : ps) vt te acc = case p of
             Left e -> Left $ EnvError e
             Right t' -> let vt'= insertVariable nm t' vt
                             acc' = (pn, Env.PRef t') : acc in
-                        parseParams ps vt' te acc' 
+                        parseParams ps vt' te acc'
 
 
 parseStmBloc :: [Abs.Stm] -> VariableType -> Env.TypeEnv -> Env.Type -> (VariableType, Env.TypeEnv, Env.Type) ->
@@ -233,7 +236,7 @@ parseStmBloc :: [Abs.Stm] -> VariableType -> Env.TypeEnv -> Env.Type -> (Variabl
 parseStmBloc [] vt te t acc = Right acc
 parseStmBloc (s : ss) vt te t (vt'', te'', t'') = case parseStm s vt te t of
         Left e -> Left e
-        Right (vt', te', t') -> if t' /= Env.TVoid then 
+        Right (vt', te', t') -> if t' /= Env.TVoid then
                                     parseStmBloc ss vt' te' t (vt'', te'', t')
                                 else parseStmBloc ss vt' te' t (vt'', te'', t'')
 
@@ -245,7 +248,7 @@ parseStm (Abs.StmExpr expr) vt te _ = case exprToType expr vt te of
         Right _ -> Right (vt, te, Env.TVoid)
 parseStm (Abs.StmDec dec) vt te _ = case parseDec dec vt te of
         Left e -> Left e
-        Right (Left (nm, t)) -> let vt' = insertVariable nm t vt 
+        Right (Left (nm, t)) -> let vt' = insertVariable nm t vt
                                 in Right (vt', te, Env.TVoid)
         Right (Right (nm, t)) -> let te' = Env.insertType nm t te
                                  in Right (vt, te', Env.TVoid)
@@ -266,14 +269,14 @@ parseStm (Abs.StmIfE expr stm1 stm2) vt te t = case isType expr Env.TBool vt te 
                 Left e -> Left e
                 Right (_, _, t'') -> if t' == t'' then
                                         Right (vt, te, t')
-                                     else Right (vt, te, Env.TVoid) 
+                                     else Right (vt, te, Env.TVoid)
 parseStm (Abs.StmFor dec expr stm1 stm2) vt te t = case parseDec dec vt te of
         Left e -> Left e
         Right (Left (nm, t)) -> let vt' = insertVariable nm t vt in
             case parseStm (Abs.StmWhile expr (Abs.StmBloc [stm2, stm1])) vt' te t of
-                Left e -> Left e 
+                Left e -> Left e
                 Right (_, _, t') -> Right (vt, te, t')
-        Right (Right (nm, t)) -> let te' = Env.insertType nm t te in 
+        Right (Right (nm, t)) -> let te' = Env.insertType nm t te in
             case parseStm (Abs.StmWhile expr (Abs.StmBloc [stm2, stm1])) vt te' t of
                 Left e -> Left e
                 Right (_, _, t') -> Right (vt, te, t')

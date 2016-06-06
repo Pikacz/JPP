@@ -1,0 +1,4 @@
+// invalid auto types
+auto x = 1;
+auto y = "asd";
+y = x;

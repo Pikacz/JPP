@@ -25,9 +25,9 @@ transStm x = case x of
   StmDec dec  -> failure x
   StmWhile expr stm  -> failure x
   StmIf expr stm  -> failure x
-  StmIfE expr stm1 stm2  -> failure x
+  StmIfE expr stm0 stm  -> failure x
   StmBloc stms  -> failure x
-  StmFor dec expr stm1 stm2  -> failure x
+  StmFor dec expr stm0 stm  -> failure x
   StmRet  -> failure x
   StmRetV expr  -> failure x
   StmPrint expr  -> failure x
@@ -39,6 +39,7 @@ transDec :: Dec -> Result
 transDec x = case x of
   DVar type' id  -> failure x
   DInit type' id expr  -> failure x
+  DAuto id expr  -> failure x
   DArr type' id expr  -> failure x
   DRec id decs  -> failure x
   DFunc type' id params stm  -> failure x
@@ -69,20 +70,20 @@ transExpr x = case x of
   ExprIL var  -> failure x
   ExprDR var  -> failure x
   ExprDL var  -> failure x
-  ExprAnd expr1 expr2  -> failure x
-  ExprOr expr1 expr2  -> failure x
+  ExprAnd expr0 expr  -> failure x
+  ExprOr expr0 expr  -> failure x
   ExprNot expr  -> failure x
-  ExprLt expr1 expr2  -> failure x
-  ExprLte expr1 expr2  -> failure x
-  ExprEq expr1 expr2  -> failure x
-  ExprNEq expr1 expr2  -> failure x
-  ExprGte expr1 expr2  -> failure x
-  ExprGt expr1 expr2  -> failure x
-  ExprAdd expr1 expr2  -> failure x
-  ExprSub expr1 expr2  -> failure x
-  ExprMod expr1 expr2  -> failure x
-  ExprMul expr1 expr2  -> failure x
-  ExprDiv expr1 expr2  -> failure x
+  ExprLt expr0 expr  -> failure x
+  ExprLte expr0 expr  -> failure x
+  ExprEq expr0 expr  -> failure x
+  ExprNEq expr0 expr  -> failure x
+  ExprGte expr0 expr  -> failure x
+  ExprGt expr0 expr  -> failure x
+  ExprAdd expr0 expr  -> failure x
+  ExprSub expr0 expr  -> failure x
+  ExprMod expr0 expr  -> failure x
+  ExprMul expr0 expr  -> failure x
+  ExprDiv expr0 expr  -> failure x
   ExprVal val  -> failure x
   ExprVar var  -> failure x
   ExprCall var exprs  -> failure x
