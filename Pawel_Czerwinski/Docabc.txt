@@ -35,11 +35,11 @@ except ``"`` unless preceded by ``\``.
 The set of reserved words is the set of terminals appearing in the grammar. Those reserved words that consist of non-letter characters are called symbols, and they are treated in a different way from those that are similar to identifiers. The lexer follows rules familiar from languages like Haskell, C, and Java, including longest match and spacing conventions.
 
 The reserved words used in abc are the following:
-  | ``bool`` | ``char`` | ``else`` | ``false``
-  | ``fi`` | ``for`` | ``if`` | ``int``
-  | ``print`` | ``println`` | ``read`` | ``return``
-  | ``string`` | ``struct`` | ``true`` | ``void``
-  | ``while`` |  |  | 
+  | ``auto`` | ``bool`` | ``char`` | ``else``
+  | ``false`` | ``fi`` | ``for`` | ``if``
+  | ``int`` | ``print`` | ``println`` | ``read``
+  | ``return`` | ``string`` | ``struct`` | ``true``
+  | ``void`` | ``while`` |  | 
 
 The symbols used in abc are the following:
   | ; | ( | ) | {
@@ -80,6 +80,7 @@ All other symbols are terminals.
   |  |  **|**  | //Dec// ``;`` //[Dec]// 
   | //Dec// | -> | //Type// //Ident// 
   |  |  **|**  | //Type// //Ident// ``=`` //Expr// 
+  |  |  **|**  | ``auto`` //Ident// ``=`` //Expr// 
   |  |  **|**  | //Type// //Ident// ``[`` //Expr// ``]`` 
   |  |  **|**  | ``struct`` //Ident// ``{`` //[Dec]// ``}`` 
   |  |  **|**  | //Type// //Ident// ``(`` //[Param]// ``)`` //Stm// 
